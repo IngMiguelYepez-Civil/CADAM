@@ -394,13 +394,13 @@ function DesktopSidebar({ isSidebarOpen, setIsSidebarOpen }: SidebarProps) {
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <a
-                      href={BILLING_URL}
+                      href="https://openrouter.ai/keys"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center"
                     >
                       <Crown className="mr-2 h-4 w-4" />
-                      <span>Subscriptions</span>
+                      <span>Mi cuenta OpenRouter</span>
                     </a>
                   </DropdownMenuItem>
                 </DropdownMenuGroup>

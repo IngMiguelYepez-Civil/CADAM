@@ -1,3 +1,5 @@
+import { useOpenRouter } from '@/lib/openrouter';
+import { OpenRouterStatus } from '@/components/OpenRouterConnection';
 import React, {
   useState,
   useRef,
@@ -474,6 +476,14 @@ function TextAreaChat({
   onTypeChange,
   conversation,
 }: TextAreaChatProps) {
+  const openRouter = useOpenRouter();
+  const routerVision =
+    openRouter.models.find((m) => m.id === openRouter.model)?.vision ?? false;
+  useEffect(() => {
+    if (type === 'parametric' && openRouter.model && openRouter.model !== model)
+      setModel(openRouter.model);
+  }, [openRouter.model, model, setModel, type]);
+
   const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [input, setInput] = useState('');
@@ -1593,8 +1603,7 @@ function TextAreaChat({
         </div>
         <div className="flex items-center justify-between border-t border-[#2a2a2a] p-3">
           <div className="flex items-center gap-1">
-            {(type !== 'parametric' ||
-              parametricModelSupportsVision(model)) && (
+            {(type !== 'parametric' || routerVision) && (
               <div
                 className={cn(
                   'transition-all duration-300 ease-out',
@@ -1624,7 +1633,7 @@ function TextAreaChat({
             )}
 
             {/* Creative mode toggle button */}
-            {onTypeChange && (
+            {false && onTypeChange && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -1637,7 +1646,7 @@ function TextAreaChat({
                     )}
                     onClick={(e) => {
                       e.stopPropagation();
-                      onTypeChange(
+                      onTypeChange?.(
                         type === 'parametric' ? 'creative' : 'parametric',
                       );
                     }}
@@ -1684,7 +1693,7 @@ function TextAreaChat({
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <ModelSelector
               disabled={isLoading || disabled}
               models={memoizedModels}

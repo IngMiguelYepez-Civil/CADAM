@@ -8,7 +8,7 @@ import { BILLING_URL, BILLING_UPGRADE_URL } from '@/config/billing';
 export const Route = createFileRoute('/_layout/subscription')({
   beforeLoad: ({ location }) => {
     throw redirect({
-      href: 'trial' in location.search ? BILLING_UPGRADE_URL : BILLING_URL,
+      href: 'https://openrouter.ai/keys',
     });
   },
 });

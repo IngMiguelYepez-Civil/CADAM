@@ -1,3 +1,4 @@
+import { openRouterHeaders } from '@/lib/openrouter';
 import { supabase } from '@/lib/supabase';
 import { z } from 'zod';
 
@@ -20,12 +21,18 @@ export async function apiJson<T>(
   init: RequestInit = {},
   schema?: z.ZodType<T>,
 ): Promise<T | unknown> {
-  const token = (await supabase.auth.getSession()).data.session?.access_token;
+  const session = (await supabase.auth.getSession()).data.session;
+  const token = session?.access_token;
+  const visitorHeaders =
+    path === 'prompt-generator' && session
+      ? openRouterHeaders(session.user.id)
+      : {};
   const url = apiUrl(path);
   const response = await fetch(url, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
+      ...visitorHeaders,
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...init.headers,
     },

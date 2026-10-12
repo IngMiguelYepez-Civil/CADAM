@@ -1,5 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { createAnthropicText } from '@/server/anthropic';
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+import { generateText } from 'ai';
+import { visitorCredentials } from '@shared/openrouter';
 import {
   isRecord,
   isUnauthorizedError,
@@ -23,6 +25,12 @@ export const Route = createFileRoute('/api/prompt-generator')({
       POST: async ({ request }) => {
         try {
           await requireUser(request);
+          const credentials = visitorCredentials(request.headers);
+          if (!credentials)
+            return json(
+              { error: 'Conecta tu cuenta OpenRouter en Configuración.' },
+              428,
+            );
           const body = await request.json().catch(() => ({}));
           if (!isRecord(body)) {
             return json({ error: 'invalid_request' }, 400);
@@ -40,13 +48,18 @@ export const Route = createFileRoute('/api/prompt-generator')({
           const content = existingText
             ? `${base}\n\nImprove this existing prompt while preserving its intent:\n${existingText}`
             : base;
-          const prompt = await createAnthropicText({
-            model: 'claude-haiku-4-5-20251001',
-            maxTokens: 200,
+          const result = await generateText({
+            model: createOpenRouter({ apiKey: credentials.key }).chat(
+              credentials.model,
+            ),
+            maxOutputTokens: 300,
+            maxRetries: 0,
+            timeout: { totalMs: 30000 },
             system:
-              'You write concise 3D generation prompts. Return only the prompt text, no quotes or explanation.',
-            content,
+              'Write a concise CAD prompt. Return only the prompt text, no quotes or explanation.',
+            prompt: content,
           });
+          const prompt = result.text;
           return json({ prompt });
         } catch (err) {
           return json(

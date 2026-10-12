@@ -9,20 +9,7 @@ const POSTHOG_HOST =
 let isInitialized = false;
 
 export const initPostHog = () => {
-  if (!POSTHOG_KEY) {
-    console.warn('PostHog key not configured. Analytics disabled.');
-    return;
-  }
-
-  posthog.init(POSTHOG_KEY, {
-    api_host: POSTHOG_HOST,
-    person_profiles: 'always',
-    capture_pageview: false, // We'll handle this manually with React Router
-    capture_pageleave: true,
-    autocapture: true,
-  });
-
-  isInitialized = true;
+  // Visitor OAuth callbacks and inference credentials must not enter analytics.
 };
 
 // Safe wrapper that only calls PostHog methods when initialized

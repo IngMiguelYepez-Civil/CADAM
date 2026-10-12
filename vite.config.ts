@@ -1,4 +1,3 @@
-import { sentryVitePlugin } from '@sentry/vite-plugin';
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import { nitro } from 'nitro/vite';
 import fs from 'node:fs';
@@ -58,10 +57,6 @@ export default defineConfig({
       inlineDynamicImports: true,
     }),
     react(),
-    sentryVitePlugin({
-      org: 'adamcad',
-      project: 'adamcad',
-    }),
   ],
   resolve: {
     alias: {
@@ -106,7 +101,7 @@ export default defineConfig({
   },
   preview: {
     port: 4173,
-    host: true,
+    host: '127.0.0.1',
   },
   server: {
     port: 3000,

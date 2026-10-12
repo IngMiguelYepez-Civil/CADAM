@@ -1,31 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router';
-import {
-  isUnauthorizedError,
-  json,
-  preflight,
-  requireUser,
-} from '@/server/api';
-import { billing } from '@/server/billingClient';
-
+import { json, preflight } from '@/server/api';
+const unavailable = () =>
+  json({ error: 'El consumo de IA se gestiona en tu cuenta OpenRouter.' }, 410);
 export const Route = createFileRoute('/api/billing-status')({
   server: {
-    handlers: {
-      OPTIONS: preflight,
-      GET: async ({ request }) => {
-        try {
-          const user = await requireUser(request);
-          return json(await billing.getStatus(user.email!));
-        } catch (err) {
-          return json(
-            {
-              error: isUnauthorizedError(err)
-                ? 'Unauthorized'
-                : 'billing_failed',
-            },
-            isUnauthorizedError(err) ? 401 : 502,
-          );
-        }
-      },
-    },
+    handlers: { GET: unavailable, POST: unavailable, OPTIONS: preflight },
   },
 });

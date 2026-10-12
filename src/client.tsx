@@ -20,12 +20,8 @@ function getSentryTracesSampleRate() {
 
 const router = getRouter();
 
-Sentry.init({
-  dsn: import.meta.env.VITE_SENTRY_DSN ?? '',
-  environment: import.meta.env.VITE_SENTRY_ENVIRONMENT ?? 'local',
-  integrations: [Sentry.tanstackRouterBrowserTracingIntegration(router)],
-  tracesSampleRate: getSentryTracesSampleRate(),
-});
+// No request tracing: inference requests contain visitor credentials.
+Sentry.init({ enabled: false });
 
 startTransition(() => {
   hydrateRoot(
