@@ -1,5 +1,5 @@
+import { localConversationTitle } from '@shared/openrouter';
 import { createFileRoute } from '@tanstack/react-router';
-import { createAnthropicText } from '@/server/anthropic';
 import {
   isRecord,
   isUnauthorizedError,
@@ -49,12 +49,7 @@ export const Route = createFileRoute('/api/title-generator')({
           const text = trimmedText || textFromParts(body.parts);
           if (!text) return json({ title: 'New Conversation' });
 
-          const title = await createAnthropicText({
-            model: 'claude-haiku-4-5-20251001',
-            maxTokens: 100,
-            system: TITLE_SYSTEM_PROMPT,
-            content: text,
-          });
+          const title = localConversationTitle(text);
           return json({ title: title || 'New Conversation' });
         } catch {
           return json({ title: 'New Conversation' });

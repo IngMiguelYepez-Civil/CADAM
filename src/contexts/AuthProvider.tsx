@@ -1,3 +1,7 @@
+import {
+  clearOpenRouterForAccount,
+  disconnectOpenRouter,
+} from '@/lib/openrouter';
 import { useEffect, useRef, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase, ssoClaims } from '@/lib/supabase';
@@ -85,6 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const {
           data: { session },
         } = await supabase.auth.refreshSession();
+        clearOpenRouterForAccount(session?.user.id ?? null);
         setSession(session);
         localStorage.setItem('session', JSON.stringify(session));
         setUser(session?.user ?? null);
@@ -98,6 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
+      clearOpenRouterForAccount(session?.user.id ?? null);
       setSession(session);
       localStorage.setItem('session', JSON.stringify(session));
       setUser(session?.user ?? null);
@@ -109,22 +115,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  // Poll adam-billing for subscription state + token balances. 30s cadence
-  // matches the prior user_extradata poll — adam-billing is the source of
-  // truth; no local realtime channel anymore.
-  const { data: billing, isLoading: isBillingLoading } = useQuery({
-    queryKey: ['billing', 'status'],
-    enabled: !!user,
-    refetchInterval: 30000,
-    queryFn: async (): Promise<BillingStatus> => {
-      try {
-        return await apiJson('billing-status', {}, billingStatusSchema);
-      } catch (err) {
-        if (import.meta.env.DEV) return LOCAL_BILLING_STATUS;
-        throw err;
-      }
-    },
-  });
+  // OpenRouter owns visitor balances. Do not poll or invent Adam credits.
+  const billing: BillingStatus | null = null;
+  const isBillingLoading = false;
 
   // Fetch user's profile data directly (avoiding circular dependency)
   const { data: profile, isLoading: isProfileLoading } = useQuery({
@@ -219,7 +212,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: user.email,
         full_name: ssoClaims(user)?.name || profile?.full_name,
         subscription: getLevel(billing),
-        has_trialed: billing?.user.hasTrialed ?? false,
+        has_trialed: false,
       });
       posthogSent.current = true;
     }
@@ -246,6 +239,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    disconnectOpenRouter();
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   };

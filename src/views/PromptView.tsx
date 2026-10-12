@@ -1,3 +1,6 @@
+import { withinAutomaticBuildLimit } from '@shared/openrouter';
+import { openRouterHeaders } from '@/lib/openrouter';
+import { OpenRouterStatus } from '@/components/OpenRouterConnection';
 import { useNavigate, Link } from '@tanstack/react-router';
 import { LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -74,12 +77,12 @@ export function PromptView() {
 
   const lowPrompts = useMemo(() => {
     if (isLoading) return false;
-    return totalTokens > 0 && totalTokens <= 10;
+    return false; // OpenRouter owns the visitor balance.
   }, [totalTokens, isLoading]);
 
   const limitReached = useMemo(() => {
     if (isLoading) return false;
-    return totalTokens <= 0;
+    return false; // Connection is checked when a request is sent.
   }, [totalTokens, isLoading]);
 
   // Trigger fade in on mount
@@ -144,6 +147,8 @@ export function PromptView() {
         conversation_id: conversationId,
       });
 
+      openRouterHeaders(user.id);
+
       // Create conversation immediately with 'New Conversation'
       const { data: conversation, error: conversationError } = await supabase
         .from('conversations')
@@ -194,7 +199,12 @@ export function PromptView() {
             const accessToken = (await supabase.auth.getSession()).data.session
               ?.access_token;
             const headers: Record<string, string> = {};
-            if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+            if (accessToken) {
+              headers.Authorization = `Bearer ${accessToken}`;
+              const session = (await supabase.auth.getSession()).data.session;
+              if (session)
+                Object.assign(headers, openRouterHeaders(session.user.id));
+            }
             return headers;
           },
           prepareSendMessagesRequest: ({ body }) => ({
@@ -205,7 +215,9 @@ export function PromptView() {
             },
           }),
         }),
-        sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+        sendAutomaticallyWhen: (ctx) =>
+          withinAutomaticBuildLimit(ctx.messages) &&
+          lastAssistantMessageIsCompleteWithToolCalls(ctx),
       });
       void chat
         .sendMessage({ id: userMessageId, parts, metadata: { model } })
@@ -284,7 +296,9 @@ export function PromptView() {
                 users — never reflows the centered greeting. */}
             <div className="relative flex flex-col items-center">
               <div className="absolute bottom-full left-1/2 mb-16 w-max -translate-x-1/2">
-                <FreePlanTrialPill />
+                <span className="text-sm text-adam-neutral-200">
+                  MrBIM · Componentes paramétricos
+                </span>
               </div>
               <h1
                 className={cn(
@@ -319,16 +333,17 @@ export function PromptView() {
                       return;
                     }
                   }}
-                  placeholder="Start building with Adam..."
+                  placeholder="Describe el componente y sus dimensiones…"
                   type={type}
                   disabled={limitReached || isGenerating}
                   model={model}
                   setModel={setModel}
                   showPromptGenerator={true}
                   showFullLabels={true}
-                  onTypeChange={handleTypeChange}
+                  onTypeChange={undefined}
                 />
               </SelectedItemsContext.Provider>
+              <OpenRouterStatus />
               <div className="relative">
                 {isLoading && (
                   <div className="absolute left-0 right-0 top-0">

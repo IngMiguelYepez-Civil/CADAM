@@ -1,3 +1,6 @@
+import { OpenRouterStatus } from '@/components/OpenRouterConnection';
+import { withinAutomaticBuildLimit } from '@shared/openrouter';
+import { openRouterHeaders } from '@/lib/openrouter';
 import { MessageBubble } from '@/components/chat/MessageBubble';
 import { SuggestionPills } from '@/components/chat/SuggestionPills';
 import { LimitReachedMessage } from '@/components/LimitReachedMessage';
@@ -167,8 +170,13 @@ export function ChatSession({
   // in the DB, so anything the SDK might put in `messages` is ignored.
   // ───────────────────────────────────────────────────────────────────────
   const authHeaders = useCallback(async (): Promise<Record<string, string>> => {
-    const token = (await supabase.auth.getSession()).data.session?.access_token;
-    return token ? { Authorization: `Bearer ${token}` } : {};
+    const session = (await supabase.auth.getSession()).data.session;
+    return session
+      ? {
+          Authorization: `Bearer ${session.access_token}`,
+          ...openRouterHeaders(session.user.id),
+        }
+      : {};
   }, []);
 
   // The chat endpoint returns 402 when the user is out of tokens. The AI
@@ -190,9 +198,8 @@ export function ChatSession({
         billingErrorHandledRef.current = true;
         queryClient.invalidateQueries({ queryKey: ['billing', 'status'] });
         toast({
-          title: "You're out of tokens",
-          description:
-            'Upgrade your plan or buy a token pack to keep chatting.',
+          title: 'OpenRouter: saldo insuficiente',
+          description: 'Revisa o recarga el saldo de tu cuenta OpenRouter.',
           variant: 'destructive',
         });
       }
@@ -585,7 +592,8 @@ export function ChatSession({
     // Pause the loop if a tool-output persist failed — resubmitting would run
     // the server against a stale DB branch (see `persistFailedRef`).
     sendAutomaticallyWhen: (ctx) => {
-      if (persistFailedRef.current) return false;
+      if (persistFailedRef.current || !withinAutomaticBuildLimit(ctx.messages))
+        return false;
       return conversation.type === 'parametric'
         ? lastAssistantMessageIsCompleteWithParametricBuild(ctx)
         : lastAssistantMessageIsCompleteWithToolCalls(ctx);
@@ -978,10 +986,19 @@ export function ChatSession({
               />
             </div>
           ))}
+        <div className="mx-auto mb-2 max-w-3xl">
+          <OpenRouterStatus />
+          {!isLoading && !withinAutomaticBuildLimit(chat.messages) && (
+            <p className="mt-2 text-sm text-adam-neutral-200">
+              Se alcanzó el límite de tres construcciones automáticas. Revisa el
+              modelo y envía una nueva instrucción para continuar.
+            </p>
+          )}
+        </div>
         <TextAreaChat
           type={conversation.type}
           onSubmit={(parts) => void handleSend(parts)}
-          placeholder="Keep iterating with Adam..."
+          placeholder="Describe los ajustes del componente…"
           isLoading={isLoading}
           stopGenerating={stop}
           disabled={isDisabled}

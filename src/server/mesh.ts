@@ -355,6 +355,16 @@ function getSupabaseClient() {
 }
 
 export async function handleMeshRequest(req: Request) {
+  return new Response(
+    JSON.stringify({
+      error:
+        'La generación externa de mallas no está habilitada en MrBIM. Utiliza el modo paramétrico con OpenRouter.',
+    }),
+    { status: 422, headers: { 'Content-Type': 'application/json' } },
+  );
+}
+
+async function legacyHandleMeshRequest(req: Request) {
   try {
     debugLog('=== DENO.SERVE MESH FUNCTION ENTRY POINT ===');
     debugLog('Mesh function called', {

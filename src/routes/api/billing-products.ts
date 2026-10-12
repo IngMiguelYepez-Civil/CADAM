@@ -1,28 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { billing, BillingClientError } from '@/server/billingClient';
 import { json, preflight } from '@/server/api';
-import { logError } from '@/server/serverLog';
-
+const unavailable = () =>
+  json({ error: 'El consumo de IA se gestiona en tu cuenta OpenRouter.' }, 410);
 export const Route = createFileRoute('/api/billing-products')({
   server: {
-    handlers: {
-      OPTIONS: preflight,
-      GET: async ({ request }) => {
-        try {
-          const type = new URL(request.url).searchParams.get('type');
-          if (type === 'subscription' || type === 'pack') {
-            return json(await billing.getProductsByType(type));
-          }
-          return json(await billing.getAllProducts());
-        } catch (err) {
-          const status = err instanceof BillingClientError ? err.status : 502;
-          logError(err, {
-            functionName: 'billing-products',
-            statusCode: status,
-          });
-          return json({ error: 'billing_products_unavailable' }, status);
-        }
-      },
-    },
+    handlers: { GET: unavailable, POST: unavailable, OPTIONS: preflight },
   },
 });

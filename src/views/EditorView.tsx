@@ -707,7 +707,7 @@ function ConversationEditor() {
             initialBranch={initialBranch}
             model={model}
             setModel={updateSelectedModel}
-            isDisabled={totalTokens <= 0}
+            isDisabled={conversation.type !== 'parametric'}
             onSendParts={handleSendParts}
             onRetry={handleRetry}
             onEdit={handleEdit}
